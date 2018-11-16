@@ -9,39 +9,103 @@ function ORmain
     
     str = "max";
     
-    x = revised_simplex(c, A, b, str);
-end
-
-function x = revised_simplex(c, A, b, str)
-%Function solves the equation z = c^T * x subject to A*x = b.
-    n = length(b); %Let n be the length of b
+    [n, m] = size(A); %Find the size of A
     
-    c_B = c(1:n, :); %Cut c to the lenth of b
-    B = A(:, 1:n); %Cut A to the length of b
-    Binv = inv(B); %Find B^-1
-    
-    x_B = Binv * b; %Find basic values of x subject to x_B = B^-1 * b
-    
-    z = c_B' * x_B; %Work out value of z = c_B^T * x_B
-    BinvA = Binv * A; %Work out B^-1 * A
-    d = (c_B' * BinvA) - c'; %Calculate (c_B^T)*(B^-1 * A) - c^T
-    
-    for i = 1:n
-        
+    slack = zeros(n);
+    for i=(n-1):-1:1
+        slack(n-i) = m-i; %Get indecies of the slack variables
     end
     
-    %Output value in simplex table via new function
-    simplex_out(z);
-        
-    x = 0; %ToDo: Find way of returning data
+    SOL = 0;
     
+    c_B = c((m-n+1):m, :); %Cut c to the lenth of b
+    B = A(:, (m-n+1):m); %Cut A to the length of b
+    
+    x = revised_simplex(c, A, b, c_B, B, slack, str, SOL);
+end
+
+function x = revised_simplex(c, A, b, c_B, B, slack, str, SOL)
     if str == "max"
-        
+        %Function solves the equation z = c^T * x subject to A*x = b.
+        [n, m] = size(A); %Find the size of A
+
+        %Work out the entering P variable (optimal)
+        P_enter = 0;
+        for j = 1:(m-n)
+            if -1*c(j,:) < P_enter_coeff 
+                P_enter = j; %entering variable
+            end
+        end
+
+        %Works out leaving P variable (feasible)
+        L = zeros(n);
+        V = A(:, P_enter)/B;
+        for i = 1:n
+           L(i) = b(i) / V(i);
+        end
+        P_leave = 0;
+        for j = 1:n
+           if (L(j) == min(L)) 
+               P_leave = j;
+           end
+        end
+
+        c_B(P_leave,:) = c(P_enter,:);
+        B(:, P_leave) = A(:, P_enter);
+
+        x_B = b/B; 
+
+        z = c_B' * x_B; %Work out value of z = c_B^T * x_B
+
+        if z >= SOL
+            x = revised_simplex(c, A, b, c_B, B, slack, str, z);
+        else
+            x = revised_simplex(c, A, b, c_B, B, slack, str, SOL);
+        end
     elseif str == "min"
-        x = 0; %ToDo: Find way of minimising a problem
+        %Function solves the equation z = c^T * x subject to A*x = b.
+        [n, m] = size(A); %Find the size of A
+
+        %Work out the entering P variable (optimal)
+        P_enter = 0;
+        for j = 1:(m-n)
+            if c(j,:) > P_enter_coeff 
+                P_enter = j; %entering variable
+            end
+        end
+
+        %Works out leaving P variable (feasible)
+        L = zeros(n);
+        V = A(:, P_enter)/B;
+        for i = 1:n
+           L(i) = b(i) / V(i);
+        end
+        P_leave = 0;
+        for j = 1:n
+           if (L(j) == min(L)) 
+               P_leave = j;
+           end
+        end
+
+        c_B(P_leave,:) = c(P_enter,:);
+        B(:, P_leave) = A(:, P_enter);
+
+        x_B = b/B; 
+
+        z = c_B' * x_B; %Work out value of z = c_B^T * x_B
+
+        if z <= SOL
+            x = revised_simplex(c, A, b, c_B, B, slack, str, z);
+        else
+            x = revised_simplex(c, A, b, c_B, B, slack, str, SOL);
+        end
     else
         error("Recall function with str set to either 'min' or 'max'"); %Return error
     end
+end
+
+function P = get_P(A)
+    P = A;
 end
 
 function simplex_out(z)
