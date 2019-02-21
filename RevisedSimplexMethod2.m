@@ -440,14 +440,19 @@ C_B = zeros(1,length(BasVar));
 
 Optimality(B, C_B)
 
+%iterZ = [0];
+
 counter = 0 ;
 while Optimised == 0 && counter < 10
 Feasibility(B, enterP)
 [B,C_B] = NextIteration(B, exitP, enterP);
 Optimality(B, C_B)
 counter = counter + 1;
+%iterZ = [iterZ; Z];
 end 
 
+%figure;
+%plot(0:1:counter, iterZ);
 
 "===SOLUTION==="
 BasVar ;
